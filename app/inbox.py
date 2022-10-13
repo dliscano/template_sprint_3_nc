@@ -32,8 +32,8 @@ def send():
     if request.method == 'POST':        
         from_id = g.user['id']
         to_username = request.form['to'] #?
-        subject = ['subject'] #?
-        body = ['body'] #?
+        subject = request.form['subject'] #?
+        body = request.form['body'] #?
 
         db = get_db()
        

@@ -52,8 +52,8 @@ def register():
       
         if request.method == 'POST':
             username = request.form['username']
-            password = ['password']
-            email = ['email']
+            password = request.form['password']
+            email = request.form['email']
             
             db = get_db()
             error = None
@@ -73,7 +73,7 @@ def register():
                 flash(error)
                 return render_template('auth/register.html')
 
-            if db.execute('SELECT id FORM user WHERE username = ?', (username,)).fetchone() is not None:
+            if db.execute('SELECT id FROM user WHERE username = ?', (username,)).fetchone() is not None:
                 error = 'User {} is already registered.'.format(username)
                 flash(error)
                 return render_template('auth/register.html')
@@ -125,7 +125,7 @@ def confirm():
         if g.user:
             return redirect(url_for('inbox.show'))
 
-        if request.method == 'GET': 
+        if request.method == 'POST': 
             password = request.form['password']
             password1 = request.form['password1']
             authid = request.form['authid']
@@ -153,7 +153,7 @@ def confirm():
 
             db = get_db()
             attempt = db.execute(
-                "SELECT * FROM forgotlink WHERE CHALLENGE = ? AND STATE = ?", (authid, utils.F_ACTIVE)
+                'SELECT * FROM forgotlink where challenge=? and state=? and CURRENT_TIMESTAMP BETWEEN created AND validuntil', (authid, utils.F_ACTIVE)
             ).fetchone()
             
             if attempt is not None:
@@ -182,12 +182,12 @@ def change():
         if g.user:
             return redirect(url_for('inbox.show'))
         
-        if request.method == 'POST': 
+        if request.method == 'GET':
             number = request.args['auth']
             
             db = get_db()
             attempt = db.execute(
-                "SELECT * FROM forgotlink WHERE CHALLENGE = ? AND STATE =?", (number, utils.F_ACTIVE)
+                "SELECT * FROM forgotlink WHERE challenge = ? AND STATE =?", (number, utils.F_ACTIVE)
             ).fetchone()
             
             if attempt is not None:
@@ -205,7 +205,7 @@ def forgot():
             return redirect(url_for('inbox.show'))
         
         if request.method == 'POST':
-            email = request.args['auth']
+            email = request.form['email']
             
             if ((not email) or (not utils.isEmailValid(email))):
                 error = 'Email Address Invalid'
@@ -214,7 +214,7 @@ def forgot():
 
             db = get_db()
             user = db.execute(
-                "SELECT * FROM user WHERW email = ?", (email,)
+                "SELECT * FROM user WHERE email = ?", (email,)
             ).fetchone()
 
             if user is not None:
@@ -224,7 +224,7 @@ def forgot():
                     "UPDATE forgotlink SET STATE = ? WHERW USERID =?", (utils.F_INACTIVE, user['id'])
                 )
                 db.execute(
-                    "INSER INTO forgotlink (USERID, CHALLENGE STATE) VALUES (?,?,?)",
+                    "INSER INTO forgotlink (USERID, challenge STATE) VALUES (?,?,?)",
                     (user['id'], number, utils.F_ACTIVE)
                 )
                 db.commit()
@@ -253,7 +253,7 @@ def login():
         if g.user:
             return redirect(url_for('inbox.show'))
 
-        if request.method == 'GET':
+        if request.method == 'POST':
             username = request.form['username']
             password = request.form['password']
 
@@ -273,7 +273,7 @@ def login():
                 'SELECT * FROM user WHERE username = ?', (username,)
             ).fetchone()
             
-            if not username or not password:
+            if user is None:
                 error = 'Incorrect username or password'
             elif not check_password_hash(user['password'], password + user['salt']):
                 error = 'Incorrect username or password'   
