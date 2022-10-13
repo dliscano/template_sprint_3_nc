@@ -78,7 +78,7 @@ def register():
                 flash(error)
                 return render_template('auth/register.html')
             
-            if (not email or (not utils.isEmailValid(email))):
+            if ((not email) or (not utils.isEmailValid(email))):
                 error =  'Email address invalid.'
                 flash(error)
                 return render_template('auth/register.html')
@@ -158,12 +158,12 @@ def confirm():
             
             if attempt is not None:
                 db.execute(
-                    "UPDATE forgotlink SET STATE = ? WHERE ID = ?", (utils.F_INACTIVE, attempt['id'])
+                    'UPDATE forgotlink SET state = ? WHERE id = ?', (utils.F_INACTIVE, attempt['id'])
                 )
                 salt = hex(random.getrandbits(128))[2:]
                 hashP = generate_password_hash(password + salt)   
                 db.execute(
-                    "UPDATE USER SET PASSWORD = ?, SALT = ? WHERE ID = ?", (hashP, salt, attempt['userid'])
+                    'UPDATE user SET password = ?, salt=? WHERE id = ?', (hashP, salt, attempt['userid'])
                 )
                 db.commit()
                 return redirect(url_for('auth.login'))
@@ -187,7 +187,7 @@ def change():
             
             db = get_db()
             attempt = db.execute(
-                "SELECT * FROM forgotlink WHERE challenge = ? AND STATE =?", (number, utils.F_ACTIVE)
+                'SELECT * FROM forgotlink where challenge=? and state=? and CURRENT_TIMESTAMP BETWEEN created AND validuntil', (number, utils.F_ACTIVE)
             ).fetchone()
             
             if attempt is not None:
@@ -214,17 +214,17 @@ def forgot():
 
             db = get_db()
             user = db.execute(
-                "SELECT * FROM user WHERE email = ?", (email,)
+                'SELECT * FROM user WHERE email = ?', (email,)
             ).fetchone()
 
             if user is not None:
                 number = hex(random.getrandbits(512))[2:]
                 
                 db.execute(
-                    "UPDATE forgotlink SET STATE = ? WHERW USERID =?", (utils.F_INACTIVE, user['id'])
+                    'UPDATE forgotlink SET state = ? WHERE userid = ?', (utils.F_INACTIVE,user['id'])
                 )
                 db.execute(
-                    "INSER INTO forgotlink (USERID, challenge STATE) VALUES (?,?,?)",
+                    'INSERT INTO forgotlink (userid, challenge,state ) VALUES (?,?,?)',
                     (user['id'], number, utils.F_ACTIVE)
                 )
                 db.commit()
@@ -280,7 +280,7 @@ def login():
 
             if error is None:
                 session.clear()
-                session['user_id'] = user['password'] #?
+                session['user_id'] = user['id'] #?
                 return redirect(url_for('inbox.show'))
 
             flash(error)
@@ -304,7 +304,7 @@ def load_logged_in_user():
         
 @bp.route('/logout')
 def logout():
-    session.clear #?
+    session.clear() #?
     return redirect(url_for('auth.login'))
 
 
